@@ -25,7 +25,7 @@ int main()
 			
 		}
 		window.clear();
-		v.arrival(mp);
+		v.wander();
 		v.update();
 		v.draw(window);
 
