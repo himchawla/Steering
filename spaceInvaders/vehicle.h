@@ -15,7 +15,11 @@ private:
 
 public:
 
-	
+	float getMaxSpeed()
+	{
+		return maxSpeed;
+	}
+
 	sf::Vector2f normalize(const sf::Vector2f& source)
 	{
 		float length = sqrt((source.x * source.x) + (source.y * source.y));
@@ -25,6 +29,11 @@ public:
 			return source;
 	}
 
+	void setVel(sf::Vector2f vel)
+	{
+		velocity = vel;
+	}
+
 	sf::Vector2f scalarMult(sf::Vector2f source, float mag)
 	{
 		source.x *= mag;
@@ -32,58 +41,101 @@ public:
 		return source;
 	}
 
-	float mag(const sf::Vector2f& source)
+	float mag(const sf::Vector2f source)
 	{
 		float length = sqrt((source.x * source.x) + (source.y * source.y));
 		return length;
 	}
+	void limVel(sf::Vector2f& source, float ms)
+	{
+		if (mag(source) > ms)
+		{
+			source = normalize(source);
+			source *= ms;
+		}
 
+		else;
+	}
 	vehicle(float x, float y, float m) :sprite(x, y)
 	{
 		accelaration = sf::Vector2f(0.0f, 0.0f);
-		velocity = sf::Vector2f(0.0f, -2.0f);
+		velocity = sf::Vector2f(0.0f, 0.0f);
 		location = sf::Vector2f(x, y);
 		r = 6.0f;
-		maxSpeed = 4.0f;
-		maxForce = 0.1f;
+		maxSpeed = 0.4f;
+		maxForce = 0.01f;
 		mass = m;
 	}
 
+	sf::Vector2f getPosition()
+	{
+		return location;
+	}
+
+	void setPosition(sf::Vector2f pos)
+	{
+		location = pos;
+		setLocation(pos.x, pos.y);
+	}
 	void update();
+
+	void move();
 
 	void seek(sf::Vector2f target)
 	{
+		accelaration = sf::Vector2f(0.0f, 0.0f);
+
 		sf::Vector2f desired = target - location;
-		desired = normalize(desired);
-
-		desired *= maxSpeed;
-
+		desired = normalize(desired) * maxSpeed;
 		sf::Vector2f steer = desired - velocity;
+		limVel(steer, maxForce);
 
-		if (maxForce < mag(steer))
+		accelaration += steer;
+
+		velocity += accelaration;
+
+		limVel(velocity, maxSpeed);
+
+		location += velocity;
+	}
+
+	void pursue(vehicle v)
+	{
+		accelaration = sf::Vector2f(0.0f, 0.0f);
+
+		
+
+		float dist = mag(v.location - location);
+
+		float T = dist / maxSpeed;
+
+		sf::Vector2f futurePosition = v.location + v.velocity * T;
+		
+		seek(futurePosition);
+		if (v.getPosition() == location)
 		{
-			steer = normalize(steer);
-
-			steer *= maxForce;
-
+			v.setVel(sf::Vector2f(0.0f, 0.0f));
 		}
-
-		accelaration += steer / mass;
 	}
 
 	void arrival(sf::Vector2f target)
 	{
+		accelaration = sf::Vector2f(0.0f, 0.0f);
+
 		sf::Vector2f desired = target - location;
+		
+		float d = mag(desired);
+
+		
 		desired = normalize(desired);
 
 		desired *= maxSpeed;
 
 
-		float d = mag(desired);
-
-		if (d < 25)
+		
+		if (d < 100.0f)
 		{
-			desired = normalize(desired) * maxSpeed * (d / 25);
+			desired = normalize(desired) * maxSpeed * (d / 100.0f);
 		}
 		else
 		{
@@ -99,22 +151,29 @@ public:
 			steer *= maxForce;
 
 		}
-		accelaration += steer / mass;
+		accelaration += steer;
+
+		velocity += accelaration;
+
+
+
+		location += velocity;
 	}
 
-	void wander()
+	void wander(sf::Vector2f target)
 	{
+		sf::Vector2f desired = target - location;
 		float wanderAngle = 45.0f;
 		// Calculate the circle center
 		sf::Vector2f circleCenter;
-		circleCenter = velocity;
+		circleCenter = desired;
 		circleCenter = normalize(circleCenter);
-		circleCenter = scalarMult(circleCenter, 100.0f);
+		circleCenter = scalarMult(circleCenter, 1.0f);
 		//
 		// Calculate the displacement force
 		sf::Vector2f displacement;
 		displacement = sf::Vector2f(0.0f, -1.0f);
-		displacement = scalarMult(displacement, 100.0f);
+		displacement = scalarMult(displacement, 0.5f);
 		//
 		// Randomly change the vector direction
 		// by making it change its current angle
@@ -123,7 +182,7 @@ public:
 		// Change wanderAngle just a bit, so it
 		// won't have the same value in the
 		// next game frame.
-		wanderAngle += ((rand() % 500) / 100.0f) * 50.0f - 50.0f * .5;
+		wanderAngle += 0.01;
 		//
 		// Finally calculate and return the wander force
 		sf::Vector2f wanderForce;
