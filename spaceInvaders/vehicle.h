@@ -12,6 +12,10 @@ private:
 	float maxSpeed;
 	float maxForce;
 	float mass;
+	bool bounds;
+	bool pur;
+	float wanderDistance;
+	float followDistance;
 
 public:
 
@@ -61,13 +65,18 @@ public:
 		accelaration = sf::Vector2f(0.0f, 0.0f);
 		velocity = sf::Vector2f(0.0f, 0.0f);
 		location = sf::Vector2f(x, y);
-		r = 6.0f;
+		r = 60.0f;
 		maxSpeed = 0.4f;
 		maxForce = 0.01f;
 		mass = m;
+		bounds = false;
+		pur = false;
+		wanderDistance = 100.0f;
+		srand(static_cast <unsigned> (time(0)));
+		followDistance = 5.0f;
 	}
 
-	sf::Vector2f getPosition()
+	sf::Vector2f& getPosition()
 	{
 		return location;
 	}
@@ -79,9 +88,13 @@ public:
 	}
 	void update();
 
+	void outOfBounds(sf::Vector2f &point);
+
+	void out(sf::Vector2f& loc);
+
 	void move();
 
-	void seek(sf::Vector2f target)
+	bool seek(sf::Vector2f target)
 	{
 		accelaration = sf::Vector2f(0.0f, 0.0f);
 
@@ -90,13 +103,28 @@ public:
 		sf::Vector2f steer = desired - velocity;
 		limVel(steer, maxForce);
 
+
+		float v = mag(desired);
+		v = mag(steer);
 		accelaration += steer;
 
 		velocity += accelaration;
 
-		limVel(velocity, maxSpeed);
+		v = mag(velocity);
 
+		if (pur)
+			velocity = normalize(velocity) * maxSpeed;
+		else
+			limVel(velocity, maxSpeed);
+		v = mag(velocity);
 		location += velocity;
+
+		if (abs(location.x-target.x)<=10.0f && abs(location.y-target.y)<=10.0f)
+		{
+			return true;
+		}
+		else
+			return false;
 	}
 
 	void pursue(vehicle v)
@@ -110,11 +138,11 @@ public:
 		float T = dist / maxSpeed;
 
 		sf::Vector2f futurePosition = v.location + v.velocity * T;
-		
+		pur = true;
 		seek(futurePosition);
 		if (v.getPosition() == location)
 		{
-			v.setVel(sf::Vector2f(0.0f, 0.0f));
+			//v.setVel(sf::Vector2f(0.0f, 0.0f));
 		}
 	}
 
@@ -160,34 +188,28 @@ public:
 		location += velocity;
 	}
 
-	void wander(sf::Vector2f target)
+	void wander()
 	{
-		sf::Vector2f desired = target - location;
-		float wanderAngle = 45.0f;
-		// Calculate the circle center
-		sf::Vector2f circleCenter;
-		circleCenter = desired;
-		circleCenter = normalize(circleCenter);
-		circleCenter = scalarMult(circleCenter, 1.0f);
-		//
-		// Calculate the displacement force
-		sf::Vector2f displacement;
-		displacement = sf::Vector2f(0.0f, -1.0f);
-		displacement = scalarMult(displacement, 0.5f);
-		//
-		// Randomly change the vector direction
-		// by making it change its current angle
-		setAngle(displacement, wanderAngle);
-		//
-		// Change wanderAngle just a bit, so it
-		// won't have the same value in the
-		// next game frame.
-		wanderAngle += 0.01;
-		//
-		// Finally calculate and return the wander force
-		sf::Vector2f wanderForce;
-		wanderForce = circleCenter + displacement;
+		sf::Vector2f ab;
+		//if (!pur)
+		{
+			sf::Vector2f centre = location + velocity * wanderDistance;
 
+			out(centre);
+			float r2 = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 360.0f));
+
+//			r2 = r2 * 3.14159 / 180;
+
+			ab.x = cos(r2) * r + centre.x;
+			
+			ab.y = sin(r2) * r + centre.y;
+			
+			out(ab);
+			pur = true;
+		}
+
+		seek(sf::Vector2f(ab));
+		
 	}
 
 	void setAngle(sf::Vector2f dis, float an)
@@ -195,6 +217,26 @@ public:
 		float len = mag(dis);
 		dis.x = cos(an) * len;
 		dis.y = sin(an) * len;
+	}
+
+	void leader(vehicle lead)
+	{
+		sf::Vector2f seekPoint = - (normalize(lead.velocity) * followDistance);
+		out(seekPoint);
+		arrival(seekPoint);
+	}
+
+	void leaderMove(bool a, sf::Vector2f target)
+	{
+		if (a)
+		{
+			seek(target);
+		}
+
+		else
+		{
+			move();
+		}
 	}
 };
 
