@@ -53,7 +53,7 @@ int main()
 	tex.loadFromFile("Assets/Mouse.png");		
 	mouse.setTexture(tex);
 	mouse.setOrigin(4.0f, 4.0f);
-	bool flag = false, flag2 = false, flag3 = false, wanFlag = false;
+	bool flag = false, flag2 = false, flag3 = false, wanFlag = false, flockFlag = true;
 	//Game Loop
 	while (window.isOpen())
 	{
@@ -168,7 +168,7 @@ int main()
 			{
 				vehVec.clear();
 				st = flock;
-
+				flockFlag = true;
 				v.maxSpeed = maxSpeed;
 				v.maxForce = maxForce;
 				v.wanderDistance = wanderDistance;
@@ -301,6 +301,22 @@ int main()
 
 			//Flocking
 			vehicle* v1;
+			if (flockFlag)
+			{
+				for (int i = 0; i < 50; i++)
+				{
+					v1 = new vehicle(i * 50 / 1920, i * 50 / 1080, maxSpeed, maxForce, wanderDistance, followDistance, maxCohesion, sf::Vector2f(0.5f, 0.5f));
+					v1->setTexture("Assets/Warrior.png");
+
+					//init with some initial vel
+					sf::Vector2f vel = sf::Vector2f(0.5f, 0.5f);
+					vel = v1->normalize(vel) * maxSpeed;
+					v1->setVel(vel);
+					vehVec.push_back(v1);
+					wanFlag = false;
+				}
+				flockFlag = false;
+			}
 
 			if (wanFlag)
 			{
