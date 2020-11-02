@@ -1,3 +1,19 @@
+// 
+//  Bachelor of Software Engineering 
+//  Media Design School 
+//  Auckland 
+//  New Zealand 
+// 
+//  (c) 2019 Media Design School 
+// 
+//  File Name   :   vehicle.cpp
+//  Description :   Implementation for vehicle
+//  Author      :   Himanshu Chawla
+//  Mail        :   Himanshu.Cha8420@mediadesign.mail.nz 
+// 
+// Local Include
+
+
 #include "vehicle.h"
 
 void vehicle::update()
@@ -44,6 +60,8 @@ void vehicle::out(sf::Vector2f& loc)
 }
 
 
+
+//continue movement with current velocity
 void vehicle::move()
 {
 	limVel(velocity, maxSpeed);
